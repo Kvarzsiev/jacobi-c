@@ -1,26 +1,27 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <unistd.h>
 
-// TODO gerar números negativos
 void geraMatrizes(int tam, int matriz[tam][tam], int resultB[tam],
-                  double varsX[tam]) {
+                  double varsX[tam], int a3) {
   for (int i = 0; i < tam; i++) {
     int sum = 0;
     for (int j = 0; j < tam; j++) {
       // Quando não está na diagonal
       if (i != j) {
-        matriz[i][j] = rand() % 1000; // Gera números aleatórios de 0 à 999
+        matriz[i][j] = rand() % a3; // Gera números aleatórios
         sum += abs(matriz[i][j]);
       }
     }
     matriz[i][i] =
         sum +
-        rand() % 1000; // Gera um número maior para fazer a diagonal dominante
+        rand() % a3; // Gera um número maior para fazer a diagonal dominante
   }
 
   for (int i = 0; i < tam; i++) {
-    resultB[i] = rand() % 1000;
+    resultB[i] = rand() % a3;
   }
 
   // Inicializa array com as variáveis X sendo 0
@@ -31,9 +32,15 @@ void geraMatrizes(int tam, int matriz[tam][tam], int resultB[tam],
 // --------------------------- // --------------------------- //
 void jacobi(int tam, int matrizA[tam][tam], int resultB[tam],
             double varsX[tam]) {
-  double validator = 0;
+  int loop = 1;
+  int tes = 0;
   do {
-    validator = 0;
+    double validatorBase = 0;
+    for (int l = 0; l < tam; l++) {
+      validatorBase += varsX[l];
+    }
+    // -------------
+
     for (int j = 0; j < tam; j++) {
       double o = 0;
       for (int t = 0; t < tam; t++) {
@@ -42,20 +49,27 @@ void jacobi(int tam, int matrizA[tam][tam], int resultB[tam],
         }
       }
 
-      // Declara um placeholder para manter o valor de x nessa iteração
-      double ph = (1.0 / matrizA[j][j]) * (resultB[j] - o);
-      // Soma ao validator o valor de x da última iteração dividido pelo valor
-      // dessa, de modo que se os valores forem iguais nas duas, somará 1
-      validator += (varsX[j] / ph);
-      // atribui o valor do placeholder ao x
-      varsX[j] = ph;
+      // Atribui ao X o resultado de B menos a soma, dividido pelo A dominante
+      varsX[j] = (resultB[j] - o) / matrizA[j][j];
     }
 
-    // O loop se repete enquanto o validator for diferente do tamanho,
-    // pois quando uma iteração repetir os mesmos valores da anterior,
-    // a soma total (de 1 em 1) dará exatamente o tamanho das matrizes
-    // significando que o x já foi aproximado ao máximo
-  } while (validator != tam);
+    // -------------
+    double validator = 0;
+    for (int l = 0; l < tam; l++) {
+      validator += varsX[l];
+    }
+
+    if (tes % 10 == 0) {
+      printf("tes: %f\n", validatorBase);
+      printf("te: %f\n", validator);
+    }
+    tes++;
+
+    if ((fabs(validatorBase - validator) < 0.0000000001) || tes > 100) {
+      loop = 0;
+    }
+
+  } while (loop);
 }
 // --------------------------- // --------------------------- //
 void printaTudo(int tam, int matrizA[tam][tam], int resultB[tam],
@@ -87,23 +101,42 @@ void printaTudo(int tam, int matrizA[tam][tam], int resultB[tam],
       "\n// --------------------------- // --------------------------- //\n\n");
 }
 // --------------------------- // --------------------------- //
-int main() {
+int main(int argc, char *argv[]) {
+  int a2 = 10;
+  int a3 = 1000;
+  int np = 1;
+  int tam;
+
+  if (argc == 3) {
+    np = atoi(argv[1]);
+    tam = atoi(argv[2]);
+    printf("Programa executando!\n");
+    printf(" 1- Tamanho dos vetores: %d\n", tam);
+    printf(" 2- Coeficientes de 0 - 999.999\n");
+    printf(" %d Processos\n", np);
+  } else {
+    printf("Opções Inválidas! \n");
+    return 0;
+  }
+
   // Seeda o gerador de números aleatórios com o tempo atual
   // (assim os números são aleatórios em cada execução)
   srand(time(NULL));
 
-  // O tamanho é um número aleatório de 2 até 10
-  int tam = (rand() % 10) + 1;
+  // O tamanho é um número aleatório (min = 2)
   if (tam == 1) {
     tam++;
   }
+
   int matrizA[tam][tam];
   int resultB[tam];
   double varsX[tam];
 
-  geraMatrizes(tam, matrizA, resultB, varsX);
+  geraMatrizes(tam, matrizA, resultB, varsX, a3);
 
   jacobi(tam, matrizA, resultB, varsX);
 
-  printaTudo(tam, matrizA, resultB, varsX);
+  if (tam <= 20) {
+    printaTudo(tam, matrizA, resultB, varsX);
+  }
 }
